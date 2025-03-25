@@ -63,6 +63,10 @@ const App: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const handleUploadChange = ({ fileList: newFileList }: any) => {
+    for (const newFile of newFileList) {
+      // 优化超长文件名展示，保留前 18 位和后 8 位
+      if (newFile.name.length >= 20) newFile.name = `${newFile.name.slice(0, 18)}...${newFile.name.slice(-8)}`;
+    }
     setFileList(newFileList);
   };
 
@@ -127,7 +131,21 @@ const App: React.FC = () => {
         ),
       });
     } catch (_error) {
-      message.error(`解密失败: ${_error}`);
+      if (_error instanceof Error) {
+        const errorMessages = {
+          'len(found) = 0': '未检测到有效二维码',
+          'Unexpected token': '图片内容无法解析',
+          'Unsupported state or unable to authenticate data': '密码不正确',
+          'SOI not found': '图片格式不正确',
+        };
+
+        const errorMsg = Object.entries(errorMessages).reduce(
+          (message, [errorPattern, customMessage]) =>
+            _error.toString().includes(errorPattern) ? customMessage : message,
+          `未知错误: ${_error}`
+        );
+        Modal.error({ title: '解密失败', content: errorMsg });
+      }
       throw _error;
     } finally {
       setLoading(false);
