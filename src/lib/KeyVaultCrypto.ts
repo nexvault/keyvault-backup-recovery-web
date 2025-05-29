@@ -1,5 +1,6 @@
 import { scryptAsync } from '@noble/hashes/scrypt';
 import argon2 from 'argon2-browser';
+import * as bip39 from 'bip39';
 import Crypto from 'crypto';
 
 const { createCipheriv, createDecipheriv, randomBytes } = Crypto;
@@ -117,5 +118,31 @@ export class KeyVaultCrypto {
     decryptedText += decipher.final('utf8');
 
     return decryptedText;
+  }
+
+  /**
+   * 检查助记词是否合法
+   * @param mnemonic 助记词
+   * @returns 是否合法
+   */
+  public async validateMnemonic(mnemonic: string): Promise<boolean> {
+    return bip39.validateMnemonic(mnemonic);
+  }
+
+  /**
+   * 检查助记词是否合法
+   * @param mnemonic 助记词
+   * @param language 语言
+   * @returns 不在单词列表中的单词
+   */
+  public async checkMnemonicWords(mnemonic: string, language = 'english'): Promise<string> {
+    // 找出语言对应的单词列表
+    const words = bip39.wordlists[language];
+    if (!words) throw new Error('Invalid language');
+    // 将助记词拆分成单词数组
+    const wordsArray = mnemonic.split(' ');
+    // 找出不在单词列表中的单词
+    const invalidWords = wordsArray.filter((word) => !words.includes(word));
+    return invalidWords.join(', ');
   }
 }
